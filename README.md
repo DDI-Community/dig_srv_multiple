@@ -1,5 +1,3 @@
-Sure thing! Here's a step-by-step guide on how to use the updated `dig_srv_records.sh` script, including examples of SRV records to put in your `SRVrecords.txt` file.
-
 ### Guide to Use `dig_srv_records.sh` for SRV Record Lookup
 
 #### Step 1: Prepare the Environment
