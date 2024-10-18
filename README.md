@@ -1,146 +1,126 @@
-Guide: Running dig to Query SRV Records with a Custom DNS Server
+Sure thing! Here's a step-by-step guide on how to use the updated `dig_srv_records.sh` script, including examples of SRV records to put in your `SRVrecords.txt` file.
 
-This guide will walk you through setting up and using a Bash script to query SRV (Service) records for multiple domains using the dig command. The script allows you to specify a DNS server to query against, or if no DNS server is provided, it will use the default system DNS.
+### Guide to Use `dig_srv_records.sh` for SRV Record Lookup
 
-Prerequisites:
+#### Step 1: Prepare the Environment
 
-	1.	Linux-based system or any system with Bash and dig installed.
-	2.	A list of SRV records you want to query.
-	3.	Basic knowledge of running scripts in Bash.
+Before you start, you need to have a Linux environment with `dig` installed. The `dig` command is often part of the `dnsutils` package, which you can install using your package manager.
 
-Step-by-Step Instructions
+For example, on **Debian/Ubuntu**:
+```bash
+sudo apt-get update
+sudo apt-get install dnsutils
+```
 
-Step 1: Create SRVrecords.txt
+#### Step 2: Create the `SRVrecords.txt` File
 
-	1.	Create a file called SRVrecords.txt in the same directory where you’ll place the script.
-	2.	Add the SRV records you want to query to the file, one per line.
+You need a file named `SRVrecords.txt` that contains a list of SRV records you want to resolve. Each SRV record should be on a separate line. Here’s an example of the file content:
 
-An SRV record typically follows the format:
-
-_service._protocol.domain
-
-For example:
-
-	•	_ldap._tcp.example.com: LDAP service over TCP for example.com
-	•	_sip._udp.example.com: SIP service over UDP for example.com
-
-Here’s an example SRVrecords.txt:
-
+**`SRVrecords.txt` example:**
+```
 _ldap._tcp.example.com
-_sip._udp.example.com
-_kerberos._tcp.example.com
-_smtp._tcp.mail.example.com
+_sip._tcp.example.com
+_kerberos._udp.example.com
+_xmpp-server._tcp.example.org
+```
 
-Each line represents an SRV record that the script will query.
+In this example:
+- `_ldap._tcp.example.com`: Queries for LDAP services in the domain `example.com`.
+- `_sip._tcp.example.com`: Queries for SIP services for the domain `example.com`.
+- `_kerberos._udp.example.com`: Queries for Kerberos services using UDP for `example.com`.
+- `_xmpp-server._tcp.example.org`: Queries for XMPP server service for `example.org`.
 
-Step 2: Create the Bash Script
+#### Step 3: Create the Bash Script
 
-	1.	Open a text editor (such as nano or vi) and create a new file named dig_srv_records.sh.
+Now, create the Bash script to read the list of SRV records from `SRVrecords.txt` and run `dig` for each.
 
-nano dig_srv_records.sh
+1. **Create a new file named `dig_srv_records.sh`**:
+   ```bash
+   nano dig_srv_records.sh
+   ```
 
+2. **Paste the following script** into the file:
+   ```bash
+   #!/bin/bash
 
-	2.	Copy and paste the following script into the file:
+   # Check if SRVrecords.txt exists
+   if [ ! -f SRVrecords.txt ]; then
+       echo "SRVrecords.txt not found! Please create the file and list SRV records in it."
+       exit 1
+   fi
 
-#!/bin/bash
+   # Check if a DNS server was provided as an argument
+   if [ $# -eq 0 ]; then
+       echo "No DNS server specified. Using the default DNS server."
+       dns_server=""
+   else
+       dns_server="@${1}"
+       echo "Using DNS server: $1"
+   fi
 
-# Check if SRVrecords.txt exists
-if [ ! -f SRVrecords.txt ]; then
-    echo "SRVrecords.txt not found! Please create the file and list SRV records in it."
-    exit 1
-fi
+   # Read each line from SRVrecords.txt and run dig for SRV records
+   while read -r srv_record; do
+       if [[ -n "$srv_record" ]]; then
+           echo "Resolving SRV record: $srv_record"
+           dig +short SRV "$srv_record" $dns_server
+           echo ""
+       fi
+   done < SRVrecords.txt
+   ```
 
-# Check if a DNS server was provided as an argument
-if [ $# -eq 0 ]; then
-    echo "No DNS server specified. Using the default DNS server."
-    dns_server=""
-else
-    dns_server="@${1}"
-    echo "Using DNS server: $1"
-fi
+3. **Save and exit** (`CTRL + X`, then `Y`, then `Enter`).
 
-# Read each line from SRVrecords.txt and run dig for SRV records
-while read -r srv_record; do
-    if [[ -n "$srv_record" ]]; then
-        echo "Resolving SRV record: $srv_record"
-        dig +short SRV "$srv_record" $dns_server
-        echo ""
-    fi
-done < SRVrecords.txt
+4. **Make the script executable**:
+   ```bash
+   chmod +x dig_srv_records.sh
+   ```
 
+#### Step 4: Run the Script
 
-	3.	Save the file and exit the editor (for nano, press CTRL+X, then Y, and Enter).
+You can run the script in two different ways, either specifying a DNS server to use or defaulting to the system-configured DNS server.
 
-Step 3: Make the Script Executable
+##### Option 1: Using a Specific DNS Server
 
-In the terminal, run the following command to make the script executable:
-
-chmod +x dig_srv_records.sh
-
-Step 4: Run the Script
-
-You can now run the script in two ways:
-
-	1.	Using the Default DNS Server:
-If you don’t specify a DNS server, the script will use the system’s default DNS server.
-Run the script without any arguments:
-
-./dig_srv_records.sh
-
-
-	2.	Using a Specific DNS Server:
-You can also specify a DNS server (IP or hostname) as an argument.
-For example, to use Google’s public DNS server (8.8.8.8):
-
+If you want to query a specific DNS server (e.g., Google’s DNS at `8.8.8.8`):
+```bash
 ./dig_srv_records.sh 8.8.8.8
+```
 
+- This will use the DNS server at `8.8.8.8` to resolve each SRV record listed in `SRVrecords.txt`.
 
+##### Option 2: Using the Default DNS Server
 
-Example Outputs
+If you do not specify a DNS server, the system will use the default DNS server that is configured:
+```bash
+./dig_srv_records.sh
+```
 
-Example 1: Using the default DNS server
+- This is useful if you want to use the DNS server settings already defined on your machine.
 
-No DNS server specified. Using the default DNS server.
-Resolving SRV record: _ldap._tcp.example.com
-0 100 389 ldapserver.example.com.
+#### Step 5: Interpret the Output
 
-Resolving SRV record: _sip._udp.example.com
-10 100 5060 sipserver.example.com.
+The script will provide output for each SRV record in `SRVrecords.txt`. Here’s an example output for `_ldap._tcp.example.com`:
 
-Resolving SRV record: _kerberos._tcp.example.com
-0 100 88 kerberos.example.com.
-
-Resolving SRV record: _smtp._tcp.mail.example.com
-0 100 25 mailserver.example.com.
-
-Example 2: Using a custom DNS server (e.g., 8.8.8.8)
-
+```bash
 Using DNS server: 8.8.8.8
 Resolving SRV record: _ldap._tcp.example.com
-0 100 389 ldapserver.example.com.
+0 100 389 ldap.example.com.
 
-Resolving SRV record: _sip._udp.example.com
-10 100 5060 sipserver.example.com.
+Resolving SRV record: _sip._tcp.example.com
+0 100 5060 sipserver.example.com.
+```
 
-Resolving SRV record: _kerberos._tcp.example.com
-0 100 88 kerberos.example.com.
+- Each line in the result shows the **priority**, **weight**, **port**, and **target host** for the SRV record.
+  - Example: `0 100 389 ldap.example.com.` means:
+    - **Priority**: 0 (lower value indicates higher priority)
+    - **Weight**: 100 (used to determine the load distribution when multiple servers have the same priority)
+    - **Port**: 389 (the port that the service is running on)
+    - **Target Host**: `ldap.example.com` (the hostname providing the service)
 
-Resolving SRV record: _smtp._tcp.mail.example.com
-0 100 25 mailserver.example.com.
+#### Summary
 
-In both examples, the SRV records are resolved, and the results show the priority, weight, port, and hostname of the server providing the service.
+- **SRVrecords.txt**: Contains the list of SRV records you want to query.
+- **dig_srv_records.sh**: The script that runs `dig` against each SRV record in the file.
+- Run the script with or without specifying a DNS server to get SRV record resolutions.
 
-Customizing and Troubleshooting
-
-	1.	Modifying the SRVrecords.txt file:
-	•	You can add or remove SRV records in SRVrecords.txt as needed. Make sure each line is a valid SRV record format.
-	2.	Verifying DNS resolution:
-	•	If a record doesn’t resolve, dig will simply output no information for that query. You can check if the DNS server you are querying is correctly configured to serve the SRV records.
-	3.	Handling Multiple DNS Servers:
-	•	If you want to test the same SRV records against multiple DNS servers, you can run the script repeatedly with different DNS server arguments.
-
-Conclusion
-
-By following this guide, you can easily query multiple SRV records against any DNS server using a custom script. This is useful for troubleshooting or verifying DNS configurations for services like LDAP, SIP, Kerberos, and more.
-
-Let me know if you need further assistance!
+By following this guide, you can easily automate the process of checking multiple SRV records against the DNS server of your choice.
